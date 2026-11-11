@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const clothingSchema = new mongoose.Schema(
     {
         userId: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: String,
             required: [true, "User ID is required"]
         },
 
@@ -17,7 +17,20 @@ const clothingSchema = new mongoose.Schema(
         category: {
             type: String,
             required: [true, "Category is required"],
-            enum: ["Shirt", "T-Shirt", "Jeans", "Dress", "Jacket", "Other"]
+            enum: [
+                "Tops",
+                "Dresses",
+                "Denim",
+                "Shoes",
+                "Bags",
+                "Accessories",
+                "Shirt",
+                "T-Shirt",
+                "Jeans",
+                "Dress",
+                "Jacket",
+                "Other"
+            ]
         },
 
         color: {
