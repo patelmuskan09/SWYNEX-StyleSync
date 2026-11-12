@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import "./HomeFeatures.css";
 
-const API_URL = "http://localhost:5000/api/clothing";
+const API_URL = "https://stylesyncbackend-qhvr.onrender.com/api/clothing";
 const USER_ID = "muskan-local-user";
 
 const categories = [
