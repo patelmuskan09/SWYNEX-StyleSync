@@ -5,6 +5,7 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 const clothingRoutes = require("./routes/clothingRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // API Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/clothing", clothingRoutes);
 
 // Test route

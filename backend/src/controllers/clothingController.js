@@ -1,10 +1,23 @@
 
 const Clothing = require("../models/Clothing");
 
+// Get the logged-in user's ID
+const getUserId = (req) => String(req.user._id);
+
+// Only allow these clothing fields to be saved or updated
+const getAllowedFields = (body) => {
+    const { name, category, color, size, imageUrl } = body;
+
+    return { name, category, color, size, imageUrl };
+};
+
 // 1. Add a clothing item
 const addClothing = async (req, res) => {
     try {
-        const clothing = await Clothing.create(req.body);
+        const clothing = await Clothing.create({
+            ...getAllowedFields(req.body),
+            userId: getUserId(req)
+        });
 
         res.status(201).json({
             success: true,
@@ -19,10 +32,12 @@ const addClothing = async (req, res) => {
     }
 };
 
-// 2. Get all clothing items
+// 2. Get only the logged-in user's clothing
 const getClothing = async (req, res) => {
     try {
-        const clothing = await Clothing.find();
+        const clothing = await Clothing.find({
+            userId: getUserId(req)
+        });
 
         res.status(200).json({
             success: true,
@@ -37,10 +52,13 @@ const getClothing = async (req, res) => {
     }
 };
 
-// 3. Get a single clothing item
+// 3. Get one clothing item belonging to the logged-in user
 const getClothingById = async (req, res) => {
     try {
-        const clothing = await Clothing.findById(req.params.id);
+        const clothing = await Clothing.findOne({
+            _id: req.params.id,
+            userId: getUserId(req)
+        });
 
         if (!clothing) {
             return res.status(404).json({
@@ -61,12 +79,15 @@ const getClothingById = async (req, res) => {
     }
 };
 
-// 4. Update clothing details
+// 4. Update only the logged-in user's clothing
 const updateClothing = async (req, res) => {
     try {
-        const clothing = await Clothing.findByIdAndUpdate(
-            req.params.id,
-            req.body,
+        const clothing = await Clothing.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                userId: getUserId(req)
+            },
+            getAllowedFields(req.body),
             {
                 new: true,
                 runValidators: true
@@ -93,10 +114,13 @@ const updateClothing = async (req, res) => {
     }
 };
 
-// 5. Delete a clothing item
+// 5. Delete only the logged-in user's clothing
 const deleteClothing = async (req, res) => {
     try {
-        const clothing = await Clothing.findByIdAndDelete(req.params.id);
+        const clothing = await Clothing.findOneAndDelete({
+            _id: req.params.id,
+            userId: getUserId(req)
+        });
 
         if (!clothing) {
             return res.status(404).json({

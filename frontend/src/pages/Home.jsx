@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
@@ -8,8 +7,9 @@ import {
 } from "lucide-react";
 import "./HomeFeatures.css";
 
-const API_URL = "https://stylesyncbackend-qhvr.onrender.com/api/clothing";
-const USER_ID = "muskan-local-user";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_URL = `${API_BASE_URL}/api/clothing`;
 
 const categories = [
   {
@@ -65,7 +65,7 @@ function Logo() {
   );
 }
 
-function Home() {
+function Home({ token, user, onLogout }) {
   const [clothing, setClothing] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -73,11 +73,11 @@ function Home() {
 
   const [activeCategory, setActiveCategory] = useState("All");
 
+  const wishlistKey = `stylesync-wishlist-${user.id}`;
+
   const [wishlist, setWishlist] = useState(() => {
     try {
-      return JSON.parse(
-        localStorage.getItem("stylesync-wishlist") || "[]"
-      );
+      return JSON.parse(localStorage.getItem(wishlistKey) || "[]");
     } catch {
       return [];
     }
@@ -94,16 +94,20 @@ function Home() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  // Load clothing from the existing backend
+  // Load only the clothing items belonging to the logged-in user.
   const fetchClothing = async () => {
     try {
       setError("");
-      const response = await axios.get(API_URL);
+      const response = await axios.get(API_URL, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setClothing(response.data.data || []);
     } catch (err) {
-      setError(
-        "Couldn't connect to your wardrobe. Make sure your backend is running on port 5000."
-      );
+      if (err.response?.status === 401) {
+        onLogout();
+        return;
+      }
+      setError("Couldn't connect to your wardrobe. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -111,15 +115,12 @@ function Home() {
 
   useEffect(() => {
     fetchClothing();
-  }, []);
+  }, [token]);
 
-  // Save wishlist in this browser
+  // Keep each account's wishlist separate in this browser.
   useEffect(() => {
-    localStorage.setItem(
-      "stylesync-wishlist",
-      JSON.stringify(wishlist)
-    );
-  }, [wishlist]);
+    localStorage.setItem(wishlistKey, JSON.stringify(wishlist));
+  }, [wishlist, wishlistKey]);
 
   const openAddForm = (category = "Tops") => {
     setEditingId(null);
@@ -157,17 +158,17 @@ function Home() {
     setError("");
     setSuccess("");
 
-    const payload = {
-      ...form,
-      userId: USER_ID
+    const payload = { ...form };
+    const config = {
+      headers: { Authorization: `Bearer ${token}` }
     };
 
     try {
       if (editingId) {
-        await axios.put(`${API_URL}/${editingId}`, payload);
+        await axios.put(`${API_URL}/${editingId}`, payload, config);
         setSuccess("Your clothing item has been updated!");
       } else {
-        await axios.post(API_URL, payload);
+        await axios.post(API_URL, payload, config);
         setSuccess("Your clothing item has been added!");
       }
 
@@ -176,6 +177,10 @@ function Home() {
       setEditingId(null);
       await fetchClothing();
     } catch (err) {
+      if (err.response?.status === 401) {
+        onLogout();
+        return;
+      }
       setError(
         err.response?.data?.message ||
         "Something went wrong while saving. Please check your details."
@@ -194,7 +199,9 @@ function Home() {
     if (!confirmed) return;
 
     try {
-      await axios.delete(`${API_URL}/${id}`);
+      await axios.delete(`${API_URL}/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       setClothing((items) =>
         items.filter((item) => item._id !== id)
@@ -205,7 +212,11 @@ function Home() {
       );
 
       setSuccess("Clothing item deleted.");
-    } catch {
+    } catch (err) {
+      if (err.response?.status === 401) {
+        onLogout();
+        return;
+      }
       setError("Couldn't delete this item. Please try again.");
     }
   };
@@ -395,7 +406,8 @@ function Home() {
             <UserRound size={30} />
           </div>
 
-          <h3>My Style Profile</h3>
+          <h3>{user.name}</h3>
+          <p>{user.email}</p>
           <p>Your personal StyleSync space.</p>
 
           <div className="profile-stats">
@@ -418,6 +430,10 @@ function Home() {
             }}
           >
             <Plus size={16} /> Add clothing
+          </button>
+
+          <button className="profile-action" onClick={onLogout}>
+            Log out
           </button>
         </div>
       )}

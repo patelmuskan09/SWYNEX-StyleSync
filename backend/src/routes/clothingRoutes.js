@@ -1,5 +1,8 @@
+
 const express = require("express");
 const router = express.Router();
+
+const protect = require("../middleware/authMiddleware");
 
 const {
     addClothing,
@@ -8,6 +11,9 @@ const {
     updateClothing,
     deleteClothing
 } = require("../controllers/clothingController");
+
+// Require a valid login token for every clothing route
+router.use(protect);
 
 // Routes for all clothing items
 router.route("/")
